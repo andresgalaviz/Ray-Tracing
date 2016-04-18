@@ -300,6 +300,7 @@
    var f = document.querySelector("#fps");
    var planet1 = 0;
     var planet2 = 0;
+    var planet3 = 0;
    function renderLoop() {
       f.innerHTML = fps.getFPS();
 
@@ -317,14 +318,18 @@
           bdy.replaceChild(newCanvas, cv);
       }
 
-        planet1 += 0.1;
-        planet2 += 0.2; 
+        planet1 += 0.05;
+        planet2 += 0.1; 
+        planet3 += 0.1; 
         objects[11] = Math.sin(planet1) * 3.5;
         objects[12]= -3 + (Math.cos(planet1) * 3.5);
 
         objects[23] = Math.sin(planet2) * 4;
         objects[25] = -3 + (Math.cos(planet2) * 4);
       
+
+        objects[36] = -25 + (Math.sin(planet3) * 4);
+        objects[37] = -3 + (Math.cos(planet3) * 4);
      // setTimeout(renderLoop,1);            // Uncomment this line, and comment the next line
       requestAnimationFrame(renderLoop);     // to see how fast this could run...
    }

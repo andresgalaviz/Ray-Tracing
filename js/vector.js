@@ -1,4 +1,5 @@
-// Vector Library
+// Vector Library from https://github.com/tmcw/literate-raytracer
+// Used for preprocessing
 // # Vector Operations
 //
 // These are general-purpose functions that deal with vectors - in this case,
