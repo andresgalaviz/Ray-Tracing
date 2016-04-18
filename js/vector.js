@@ -1,25 +1,4 @@
-// GPU.js compatible functions
-// 
-function dist(ax,ay,bx,by) {
-  return Math.sqrt(Math.pow((bx-ax), 2)+Math.pow((by-ay), 2) );
-}
-
-
-function cProdX(ay, bz, az, by) {
-    return ay*bz - az*by;
-}
-function cProdY(az, bx, ax, bz) {
-    return az*bx - ax*bz;
-}
-function cProdZ(ax, by, ay, bx) {
-    return ax*by - ay*bx;
-}
-function MagnitudeVector(x,y,z) {
-   return Math.sqrt(Math.pow(x, 2) + Math.pow(y,2) + Math.pow(z,2));
-}    
-
-
-
+// Vector Library
 // # Vector Operations
 //
 // These are general-purpose functions that deal with vectors - in this case,

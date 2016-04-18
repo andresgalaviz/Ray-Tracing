@@ -44,8 +44,7 @@
     gpu.addFunction(cProdY);
     gpu.addFunction(cProdZ);
     gpu.addFunction(MagnitudeVector);
-    // gpu.addFunction(trace);
-    // gpu.addFunction(intersectScene);
+    gpu.addFunction(sphereIntersection);
 
     function preprocessScene(camera){
         var fovRadians = Math.PI * (camera[6]/2)/180; // 0
@@ -92,22 +91,7 @@
         return 0;
     }   
 
-    gpu.addFunction(sphereIntersection);
-
-    function isLightVisible(pt, scene, light) {
-    var distObject =  intersectScene({
-        point: pt,
-        vector: Vector.unitVector(Vector.subtract(pt, light))
-    }, scene);
-
-
-    return distObject[0] > -0.005;
-}
-
-
-
-    gpu.addFunction(isLightVisible);
-      
+    
 
 
    function doit(mode) {
@@ -137,12 +121,12 @@
             var yCompY = CameraCoordSystem[7] * yScale;
             var yCompZ = CameraCoordSystem[8] * yScale;
 
-
-            var rayXVector = CameraCoordSystem[0] + xCompX + yCompX;
+            // Camera vector from the CameraPoint to the (x,y) coordinate
+            var rayXVector = CameraCoordSystem[0] + xCompX + yCompX; 
             var rayYVector = CameraCoordSystem[1] + xCompY + yCompY;
             var rayZVector = CameraCoordSystem[2] + xCompZ + yCompZ;
             var rayMagnitude = MagnitudeVector(rayXVector, rayYVector, rayZVector);
-
+            // Normaliza
             rayXVector = rayXVector/rayMagnitude;
             rayYVector = rayYVector/rayMagnitude;
             rayZVector = rayZVector/rayMagnitude;
@@ -151,118 +135,156 @@
             var nextidx = 1; 
             
 
-            
-            
             var hitIdx = -1;
             var minDistance = 1000000;
             this.color(0.95,0.95,0.95);                      // By default canvas is light grey
             // var color = trace(rayXVector, rayYVector, rayZVector, 2, 1);
-            for (i=0; i<this.constants.OBJCOUNT; i++ ) {     // Look at all object records
+            for (var i=0; i<this.constants.OBJCOUNT; i++ ) {     // Look at all object records
                 idx = nextidx;                               // Skip to next record
                 nextidx = Objects[idx+this.constants.RECSZ]+idx;                // Pre-compute the beginning of the next record
 
                 if (Objects[idx] == this.constants.SPHERE) { // i.e. if it is a SPHERE...
-
+                    // Compute intersection with sphere
                     var distanceObject = sphereIntersection(rayXVector, rayYVector, rayZVector, Camera[0], Camera[1], Camera[2], 
                                                     Objects[idx + this.constants.X], Objects[idx + this.constants.Y], Objects[idx + this.constants.Z],
                                                     Objects[idx + this.constants.RAD]);
+                    // If intersection was found
                     if(distanceObject != 1000000){
+                        // Find the closest object
                         if(distanceObject < minDistance) {
+                                // update index
                                 minDistance = distanceObject;
                                 hitIdx = idx;
                         }
                     }
 
-                    // var b = object.color,
-                    // c = Vector.ZERO,
-                    // var lambertAmount = 0;
-
-
-                    //     if (dist(this.thread.x,this.thread.y,Objects[idx+this.constants.X],Objects[idx+this.constants.Y]) < Objects[idx+this.constants.RAD]) {
-                        
-                    //         this.color(Objects[idx+this.constants.R],Objects[idx+this.constants.G],Objects[idx+this.constants.B]);
-                    // }
-                    // 
                 }
             }
+            // If an intersection was fond
             if(minDistance != 1000000) {
+                // Get the point of intersection
                 var pointAtTimeX = Camera[0] +  rayXVector*minDistance;
                 var pointAtTimeY = Camera[1] +  rayYVector*minDistance;
                 var pointAtTimeZ = Camera[2] +  rayZVector*minDistance;
-
+                // Compute the normal of the shere
+                // (Right now only spheres are supported)
                 var sphereNormalX = pointAtTimeX - Objects[hitIdx + this.constants.X];
                 var sphereNormalY = pointAtTimeY - Objects[hitIdx + this.constants.Y];
                 var sphereNormalZ = pointAtTimeZ - Objects[hitIdx + this.constants.Z];
-
-                var normalMagnitude = MagnitudeVector(sphereNormalX, sphereNormalY, sphereNormalZ);
+                var normalMagnitude = MagnitudeVector(sphereNormalX, sphereNormalY, sphereNormalZ);                
                 sphereNormalX = sphereNormalX/normalMagnitude;
                 sphereNormalY = sphereNormalY/normalMagnitude;
                 sphereNormalZ = sphereNormalZ/normalMagnitude;
-                var lambertAmount = 0.0;
+
+                // Labert contribution for each color
+
+                var lambertAmountR = 0.0;
+                var lambertAmountG = 0.0;
+                var lambertAmountB = 0.0;
                 var objectLambert = 0;
+                // Check if the object has a lambert factor
                 if(Objects[hitIdx+this.constants.LAMB] > 0) {
+                    // Add up the contribution from each lightsource
                     for (var i = 0; i < this.constants.LIGHTCOUNT; i++) {
+                        // Light X, Y, Z coordinates
                         var lightPointX = Lights[i*6 + 1];
                         var lightPointY = Lights[i*6 + 2];
                         var lightPointZ = Lights[i*6 + 3];
+                        // Ge the vector from the light to the point
+                        var pointVectorX = pointAtTimeX - lightPointX;
+                        var pointVectorY = pointAtTimeY - lightPointY;
+                        var pointVectorZ = pointAtTimeZ - lightPointZ;
+                        var pointVectorMagnitude = MagnitudeVector(pointVectorX, pointVectorY, pointVectorZ);
+                        pointVectorX = pointVectorX/pointVectorMagnitude;
+                        pointVectorY = pointVectorY/pointVectorMagnitude;
+                        pointVectorZ = pointVectorZ/pointVectorMagnitude;
 
-                        var lightVectorX = lightPointX - pointAtTimeX;
-                        var lightVectorY = lightPointY - pointAtTimeY;
+                        // Ge the vector from the point to the light
+                        var lightVectorX = lightPointX - pointAtTimeX ;
+                        var lightVectorY = lightPointY- pointAtTimeY ;
                         var lightVectorZ = lightPointZ - pointAtTimeZ;
                         var lightVectorMagnitude = MagnitudeVector(lightVectorX, lightVectorY, lightVectorZ);
-
+                        
                         lightVectorX = lightVectorX/lightVectorMagnitude;
                         lightVectorY = lightVectorY/lightVectorMagnitude;
                         lightVectorZ = lightVectorZ/lightVectorMagnitude;
 
-                        var distanceLight = sphereIntersection(lightVectorX, lightVectorY, lightVectorZ, lightPointX, lightPointY, lightPointZ, 
-                                                    Objects[hitIdx + this.constants.X], Objects[hitIdx + this.constants.Y], Objects[hitIdx + this.constants.Z],
-                                                    Objects[hitIdx + this.constants.RAD]);
 
-                        if (distanceLight < -0.005){
+
+                        minDistance = 1000000;
+                        var distanceLight;
+                        var hitLightIdx = -1;
+                        idx = 1;
+                        nextidx = 1;
+                        // Look for collisions from the light source with other objects
+                        for (var j=0; j<this.constants.OBJCOUNT; j++ ) {     // Look at all object records
+                            idx = nextidx;                               // Skip to next record
+                            nextidx = Objects[idx+this.constants.RECSZ]+idx;                // Pre-compute the beginning of the next record
+
+                            if (Objects[idx] == this.constants.SPHERE) { // i.e. if it is a SPHERE...
+
+                                 distanceLight = sphereIntersection(pointVectorX, pointVectorY, pointVectorZ, lightPointX, lightPointY, lightPointZ,
+                                             Objects[idx + this.constants.X], Objects[idx + this.constants.Y], Objects[idx + this.constants.Z], 
+                                                    Objects[idx + this.constants.RAD]);
+
+                                if(distanceLight != 1000000){
+                                    if(distanceLight < minDistance) {
+                                            minDistance = distanceLight;
+                                            hitLightIdx = idx;
+                                    }
+                                }
+
+                            }
+                        }
+                        // If no colission was found
+                        if (hitLightIdx == hitIdx){
                             var contribution = lightVectorX*sphereNormalX + lightVectorY*sphereNormalY + lightVectorZ*sphereNormalZ;
-                            if (contribution > 0) lambertAmount += contribution;
+                            // Add up the contribution of each color spectrum
+                            if (contribution > 0) {
+                                lambertAmountR += contribution*Lights[i*6 + 4];
+                                lambertAmountG += contribution*Lights[i*6 + 5];
+                                lambertAmountB += contribution*Lights[i*6 + 6];
+                            }
                         }
 
                     }
                 }
+                // If the object has specular factor
                 if (Objects[hitIdx+this.constants.SPEC] > 0) {
-
+                    // Get the ray
                     var dotProductRayNormal = rayXVector*sphereNormalX + rayYVector*sphereNormalY + rayZVector*sphereNormalZ;
                     sphereNormalX *= (dotProductRayNormal*2);
                     sphereNormalY *= (dotProductRayNormal*2);
                     sphereNormalZ *= (dotProductRayNormal*2);
-
+                    // Get the reflection
                     var rayXVectorReflection = sphereNormalX - rayXVector;
                     var rayYVectorReflection = sphereNormalY - rayYVector;
                     var rayZVectorReflection = sphereNormalZ - rayZVector;
 
-                    // For when GPU.js supports recursion (or a stack)
+                    // Calculate a reflection
+                    // Everything inside the kernel would be a recursive call
+                    // For when GPU.js supports recursion(Or a stack)
                     // var reflectedColor = trace(reflectedRay, scene, ++depth);
                     // if (reflectedColor) {
                     //     c = Vector.add(c, Vector.scale(reflectedColor, object.specular));
                     // }
+                    var specularR = 0.0;
+                    var specularG = 0.0;
+                    var specularB = 0.0;
 
                 }
 
-                var specularR = 0.0;
-                var specularG = 0.0;
-                var specularB = 0.0;
-
-                lambertAmount = Math.min(1, lambertAmount);
-                var colorR = Objects[hitIdx+this.constants.R]*lambertAmount*Objects[hitIdx+this.constants.LAMB] + Objects[hitIdx+this.constants.R]*Objects[hitIdx+this.constants.AMB];
-                var colorG = Objects[hitIdx+this.constants.G]*lambertAmount*Objects[hitIdx+this.constants.LAMB] + Objects[hitIdx+this.constants.G]*Objects[hitIdx+this.constants.AMB];
-                var colorB = Objects[hitIdx+this.constants.B]*lambertAmount*Objects[hitIdx+this.constants.LAMB] + Objects[hitIdx+this.constants.B]*Objects[hitIdx+this.constants.AMB];
+                // Get the lambert contributions
+                lambertAmountR = Math.min(1, lambertAmountR);
+                lambertAmountG = Math.min(1, lambertAmountG);
+                lambertAmountB = Math.min(1, lambertAmountB);
+                // Get the total color contributions
+                var colorR = Objects[hitIdx+this.constants.R]*lambertAmountR*Objects[hitIdx+this.constants.LAMB] + Objects[hitIdx+this.constants.R]*Objects[hitIdx+this.constants.AMB] ;
+                var colorG = Objects[hitIdx+this.constants.G]*lambertAmountG*Objects[hitIdx+this.constants.LAMB] + Objects[hitIdx+this.constants.G]*Objects[hitIdx+this.constants.AMB] ;
+                var colorB = Objects[hitIdx+this.constants.B]*lambertAmountB*Objects[hitIdx+this.constants.LAMB] + Objects[hitIdx+this.constants.B]*Objects[hitIdx+this.constants.AMB] ;
+                // Draw on the canvas
                 this.color(colorR, colorG, colorB, Objects[hitIdx+this.constants.OPAC]);
             }
-
-        // GO BACK TO TUTORIAL, NOT DONE
-            //         index = (x * 4) + (y * width * 4),
-            // data.data[index + 0] = color.x;
-            // data.data[index + 1] = color.y;
-            // data.data[index + 2] = color.z;
-            // data.data[index + 3] = 255;
-
 
       }, opt);
       return y;
@@ -272,11 +294,14 @@
    var mycode   = doit("cpu");
     var scene = preprocessScene(camera);
     var cameraCoordinateSystem = getCoordinateSystem(camera);
+    console.log(cameraCoordinateSystem);
    mykernel(camera,lights,objects, scene, cameraCoordinateSystem);
    var canvas = mykernel.getCanvas();
    document.getElementsByTagName('body')[0].appendChild(canvas);
 
    var f = document.querySelector("#fps");
+   var planet1 = 0;
+    var planet2 = 0;
    function renderLoop() {
       f.innerHTML = fps.getFPS();
 
@@ -293,9 +318,15 @@
           var newCanvas = mykernel.getCanvas();
           bdy.replaceChild(newCanvas, cv);
       }
-      // objects[10] = (objects[10]+2);
-      // objects[24] = (objects[24]+2) % 100;
-      // objects[38] = (objects[38]+2) % 100;
+
+        planet1 += 0.1;
+        planet2 += 0.2; 
+        objects[11] = Math.sin(planet1) * 3.5;
+        objects[12]= -3 + (Math.cos(planet1) * 3.5);
+
+        objects[23] = Math.sin(planet2) * 4;
+        objects[25] = -3 + (Math.cos(planet2) * 4);
+      
      // setTimeout(renderLoop,1);            // Uncomment this line, and comment the next line
       requestAnimationFrame(renderLoop);     // to see how fast this could run...
    }
@@ -304,15 +335,23 @@
         if(key == 16) {
             shiftPressed = false;
        }
+    }
+
+    window.onkeydown = function(e){
+        if (event.shiftKey) {
+            shiftPressed = true;
+        }
+        var key = e.keyCode ? e.keyCode : e.which;
+
        if(shiftPressed) {
-            if (key == 88) {
+           if (key == 38) {
                camera[3] += 10;
-           }else if (key == 90) {
+           }else if (key == 40) {
                camera[3] -= 10;
            }
-            else if (key == 39) {
+            else if (key == 88) {
                camera[4] += 10;
-           }else if (key == 37) {
+           }else if (key == 90) {
                camera[4] -= 10;
            }
             else if (key == 39) {
@@ -339,12 +378,6 @@
        }
        scene = preprocessScene(camera);
        cameraCoordinateSystem = getCoordinateSystem(camera);
-    }
-
-    window.onkeydown = function(e){
-        if (event.shiftKey) {
-            shiftPressed = true;
-        }
     }
 
 
