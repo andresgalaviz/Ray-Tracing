@@ -38,14 +38,6 @@
        return Math.sqrt(Math.pow(x, 2) + Math.pow(y,2) + Math.pow(z,2));
    }
 
-    gpu.addFunction(dist);
-    gpu.addFunction(substractVector);
-    gpu.addFunction(cProdX);
-    gpu.addFunction(cProdY);
-    gpu.addFunction(cProdZ);
-    gpu.addFunction(MagnitudeVector);
-    gpu.addFunction(sphereIntersection);
-
     function preprocessScene(camera){
         var fovRadians = Math.PI * (camera[6]/2)/180; // 0
         var heightWidthRatio = height / width; // 1
@@ -90,7 +82,13 @@
         }
         return 0;
     }   
-
+    gpu.addFunction(dist);
+    gpu.addFunction(substractVector);
+    gpu.addFunction(cProdX);
+    gpu.addFunction(cProdY);
+    gpu.addFunction(cProdZ);
+    gpu.addFunction(MagnitudeVector);
+    gpu.addFunction(sphereIntersection);
     
 
 
@@ -109,7 +107,7 @@
       };
 
         var y = gpu.createKernel(function(Camera,Lights, Objects, Scene, CameraCoordSystem) {
-            var jkj =this.constants.OBJCOUNT;
+            
 
             var xScale = ((this.thread.x * Scene[6]) - Scene[2]); // (x * pixelWidth) - halfWidth
             var xCompX = CameraCoordSystem[3] * xScale;
@@ -330,13 +328,17 @@
      // setTimeout(renderLoop,1);            // Uncomment this line, and comment the next line
       requestAnimationFrame(renderLoop);     // to see how fast this could run...
    }
+
+   // Control the position of the camera and the direction it is facing
    window.onkeyup = function(e) {
         var key = e.keyCode ? e.keyCode : e.which;
         if(key == 16) {
             shiftPressed = false;
        }
     }
-
+    // Use the arrow keys to move the x, y, z position
+    // Use Shift + arrow keys to change the x, y ,z 
+    // Not very intuitive...
     window.onkeydown = function(e){
         if (event.shiftKey) {
             shiftPressed = true;
@@ -349,35 +351,34 @@
            }else if (key == 40) {
                camera[3] -= 10;
            }
-            else if (key == 88) {
-               camera[4] += 10;
-           }else if (key == 90) {
-               camera[4] -= 10;
-           }
+
             else if (key == 39) {
                camera[5] += 10;
            }else if (key == 37) {
                camera[5] -= 10;
            }
+           
        } else {
-           if (key == 38) {
-               camera[0] += 10;
+            if (key == 90) {
+               camera[0] += 2;
+           }else if (key == 88) {
+               camera[0] -= 2;
+           }
+           else if (key == 38) {
+               camera[1] += 2;
            }else if (key == 40) {
-               camera[0] -= 10;
+               camera[1] -= 2;
            }
-            else if (key == 88) {
-               camera[1] += 10;
-           }else if (key == 90) {
-               camera[1] -= 10;
-           }
+
             else if (key == 39) {
-               camera[2] += 10;
+               camera[2] += 2;
            }else if (key == 37) {
-               camera[2] -= 10;
+               camera[2] -= 2;
            }
        }
-       scene = preprocessScene(camera);
        cameraCoordinateSystem = getCoordinateSystem(camera);
+       scene = preprocessScene(camera);
+       
     }
 
 
