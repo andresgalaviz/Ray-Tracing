@@ -347,15 +347,14 @@
 
        if(shiftPressed) {
            if (key == 38) {
-               camera[3] += 10;
+               camera[4] += 2;
            }else if (key == 40) {
-               camera[3] -= 10;
+               camera[4] -= 2;
            }
-
             else if (key == 39) {
-               camera[5] += 10;
+               camera[5] += 2;
            }else if (key == 37) {
-               camera[5] -= 10;
+               camera[5] -= 2;
            }
            
        } else {
